@@ -294,6 +294,8 @@ button {
     height: auto;
     border: 1px solid #ffffff;
     border-radius: 0;
+    touch-action: none; /* Better touch handling for mobile */
+    user-select: none; /* Prevent text selection while dragging */
 }
 
 .value-display {

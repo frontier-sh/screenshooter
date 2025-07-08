@@ -16,6 +16,8 @@ class SocialMediaImageCreator {
 			textColor: "#ffffff",
 			titleSize: 48,
 			bodySize: 24,
+			imageX: 0,
+			imageY: 0,
 		};
 
 		this.canvasSizes = {
@@ -24,6 +26,10 @@ class SocialMediaImageCreator {
 			opengraph: { width: 1200, height: 630 },
 			custom: { width: 1200, height: 630 },
 		};
+
+		// Drag state
+		this.isDragging = false;
+		this.lastMousePos = { x: 0, y: 0 };
 
 		this.init();
 		this.loadSettings();
@@ -163,7 +169,11 @@ class SocialMediaImageCreator {
 
 		// Action buttons
 		document.getElementById("resetBtn").addEventListener("click", () => this.resetAll());
+		document.getElementById("resetPositionBtn").addEventListener("click", () => this.resetImagePosition());
 		document.getElementById("downloadBtn").addEventListener("click", () => this.downloadImage());
+
+		// Canvas drag events for repositioning image
+		this.setupCanvasDragEvents();
 	}
 
 	handleFileUpload(event) {
@@ -179,6 +189,7 @@ class SocialMediaImageCreator {
 			const img = new Image();
 			img.onload = () => {
 				this.uploadedImage = img;
+				this.updateCanvasCursor();
 				this.drawCanvas();
 			};
 			img.src = e.target.result;
@@ -231,9 +242,9 @@ class SocialMediaImageCreator {
 		const scaledWidth = imgWidth * scale;
 		const scaledHeight = imgHeight * scale;
 
-		// Center the image
-		const x = (canvasWidth - scaledWidth) / 2;
-		const y = (canvasHeight - scaledHeight) / 2;
+		// Center the image and apply position offsets
+		const x = (canvasWidth - scaledWidth) / 2 + this.currentSettings.imageX;
+		const y = (canvasHeight - scaledHeight) / 2 + this.currentSettings.imageY;
 
 		// Save context for transformations
 		this.ctx.save();
@@ -378,6 +389,8 @@ class SocialMediaImageCreator {
 			textColor: "#ffffff",
 			titleSize: 48,
 			bodySize: 24,
+			imageX: 0,
+			imageY: 0,
 		};
 
 		this.uploadedImage = null;
@@ -408,6 +421,14 @@ class SocialMediaImageCreator {
 		document.getElementById("bodySizeValue").textContent = "24px";
 
 		this.updateCanvasSize();
+		this.updateCanvasCursor();
+		this.drawCanvas();
+		this.saveSettings();
+	}
+
+	resetImagePosition() {
+		this.currentSettings.imageX = 0;
+		this.currentSettings.imageY = 0;
 		this.drawCanvas();
 		this.saveSettings();
 	}
@@ -471,6 +492,96 @@ class SocialMediaImageCreator {
 		document.getElementById("titleSizeValue").textContent = `${this.currentSettings.titleSize}px`;
 		document.getElementById("bodySizeValue").textContent = `${this.currentSettings.bodySize}px`;
 	}
+
+	setupCanvasDragEvents() {
+		// Mouse events
+		this.canvas.addEventListener("mousedown", (e) => this.startDrag(e));
+		this.canvas.addEventListener("mousemove", (e) => this.drag(e));
+		this.canvas.addEventListener("mouseup", () => this.endDrag());
+		this.canvas.addEventListener("mouseleave", () => this.endDrag());
+
+		// Touch events for mobile
+		this.canvas.addEventListener("touchstart", (e) => {
+			e.preventDefault();
+			const touch = e.touches[0];
+			const mouseEvent = new MouseEvent("mousedown", {
+				clientX: touch.clientX,
+				clientY: touch.clientY
+			});
+			this.startDrag(mouseEvent);
+		});
+
+		this.canvas.addEventListener("touchmove", (e) => {
+			e.preventDefault();
+			const touch = e.touches[0];
+			const mouseEvent = new MouseEvent("mousemove", {
+				clientX: touch.clientX,
+				clientY: touch.clientY
+			});
+			this.drag(mouseEvent);
+		});
+
+		this.canvas.addEventListener("touchend", (e) => {
+			e.preventDefault();
+			this.endDrag();
+		});
+
+		// Set canvas cursor style
+		this.updateCanvasCursor();
+	}
+
+	updateCanvasCursor() {
+		if (this.uploadedImage) {
+			this.canvas.style.cursor = "grab";
+		} else {
+			this.canvas.style.cursor = "default";
+		}
+	}
+
+	startDrag(e) {
+		if (!this.uploadedImage) return;
+
+		this.isDragging = true;
+		this.canvas.style.cursor = "grabbing";
+
+		const rect = this.canvas.getBoundingClientRect();
+		this.lastMousePos = {
+			x: e.clientX - rect.left,
+			y: e.clientY - rect.top
+		};
+	}
+
+	drag(e) {
+		if (!this.isDragging || !this.uploadedImage) return;
+
+		const rect = this.canvas.getBoundingClientRect();
+		const currentMousePos = {
+			x: e.clientX - rect.left,
+			y: e.clientY - rect.top
+		};
+
+		// Calculate the delta movement
+		const deltaX = currentMousePos.x - this.lastMousePos.x;
+		const deltaY = currentMousePos.y - this.lastMousePos.y;
+
+		// Update image position
+		this.currentSettings.imageX += deltaX;
+		this.currentSettings.imageY += deltaY;
+
+		// Update last mouse position
+		this.lastMousePos = currentMousePos;
+
+		// Redraw canvas
+		this.drawCanvas();
+		this.saveSettings();
+	}
+
+	endDrag() {
+		this.isDragging = false;
+		this.canvas.style.cursor = "grab";
+	}
+
+	// ...existing code...
 }
 
 // Initialize the app when the DOM is loaded
