@@ -1,0 +1,278 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+    background: #1a1a1a;
+    min-height: 100vh;
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1.4;
+}
+
+.container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 20px;
+}
+
+h1 {
+    text-align: center;
+    color: #ffffff;
+    margin-bottom: 30px;
+    font-size: 1.5em;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: normal;
+    border: 1px solid #ffffff;
+    padding: 10px;
+    background: none;
+}
+
+.upload-section {
+    margin-bottom: 30px;
+}
+
+.upload-label {
+    display: block;
+    width: 100%;
+    padding: 40px 20px;
+    border: 1px solid #ffffff;
+    border-radius: 0;
+    text-align: center;
+    cursor: pointer;
+    background: none;
+}
+
+.upload-label:hover {
+    background: #2a2a2a;
+}
+
+.upload-text {
+    color: #ffffff;
+    font-size: 1em;
+    font-weight: normal;
+    text-transform: none;
+    letter-spacing: normal;
+}
+
+.controls-section {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.canvas-size-controls,
+.effect-controls,
+.text-controls,
+.action-controls {
+    background: none;
+    border: 1px solid #ffffff;
+    padding: 15px;
+    border-radius: 0;
+    margin-bottom: 10px;
+}
+
+.canvas-size-controls h3,
+.effect-controls h3,
+.text-controls h3 {
+    margin-bottom: 10px;
+    color: #ffffff;
+    text-transform: none;
+    letter-spacing: normal;
+    font-size: 1em;
+    font-weight: normal;
+}
+
+.control-group {
+    margin-bottom: 10px;
+}
+
+.control-group label {
+    display: block;
+    margin-bottom: 3px;
+    font-weight: normal;
+    color: #ffffff;
+    text-transform: none;
+    font-size: 0.9em;
+    letter-spacing: normal;
+}
+
+.control-group input[type="range"] {
+    width: 100%;
+    height: 20px;
+    border-radius: 0;
+    background: #1a1a1a;
+    outline: none;
+    -webkit-appearance: none;
+    appearance: none;
+    border: 1px solid #ffffff;
+}
+
+.control-group input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 20px;
+    height: 18px;
+    border-radius: 0;
+    background: #ffffff;
+    cursor: pointer;
+    border: none;
+}
+
+.control-group input[type="range"]::-moz-range-thumb {
+    width: 20px;
+    height: 18px;
+    border-radius: 0;
+    background: #ffffff;
+    cursor: pointer;
+    border: none;
+}
+
+.control-group input[type="text"],
+.control-group textarea,
+.control-group input[type="number"],
+.control-group select {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ffffff;
+    border-radius: 0;
+    font-size: 14px;
+    background: #1a1a1a;
+    color: #ffffff;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+.control-group input[type="text"]:focus,
+.control-group textarea:focus,
+.control-group input[type="number"]:focus,
+.control-group select:focus {
+    outline: none;
+    border-color: #ffffff;
+    background: #2a2a2a;
+}
+
+.control-group input[type="color"] {
+    width: 60px;
+    height: 30px;
+    border: 1px solid #ffffff;
+    border-radius: 0;
+    cursor: pointer;
+    background: #1a1a1a;
+}
+
+#customSizeInputs {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+#customSizeInputs input {
+    flex: 1;
+}
+
+.action-controls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+}
+
+.action-controls {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-direction: column;
+}
+
+button {
+    padding: 8px 16px;
+    border: 1px solid #ffffff;
+    border-radius: 0;
+    font-size: 14px;
+    font-weight: normal;
+    cursor: pointer;
+    background: #1a1a1a;
+    color: #ffffff;
+    text-transform: none;
+    letter-spacing: normal;
+    font-family: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+}
+
+#resetBtn {
+    background: #1a1a1a;
+    color: #ffffff;
+    border-color: #ffffff;
+}
+
+#resetBtn:hover {
+    background: #2a2a2a;
+}
+
+#downloadBtn {
+    background: #1a1a1a;
+    color: #ffffff;
+    border-color: #ffffff;
+}
+
+#downloadBtn:hover {
+    background: #2a2a2a;
+}
+
+.canvas-section {
+    text-align: center;
+    background: none;
+    border: 1px solid #ffffff;
+    padding: 20px;
+    border-radius: 0;
+}
+
+#canvas {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #ffffff;
+    border-radius: 0;
+}
+
+.value-display {
+    font-weight: normal;
+    color: #ffffff;
+    margin-left: 10px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .controls-section {
+        grid-template-columns: 1fr;
+    }
+    
+    .action-controls {
+        flex-direction: column;
+    }
+    
+    .container {
+        padding: 10px;
+    }
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+    width: 12px;
+}
+
+::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border: 1px solid #ffffff;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #ffffff;
+    border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #cccccc;
+}

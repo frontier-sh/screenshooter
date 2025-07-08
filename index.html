@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screenshooter</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Screenshooter</h1>
+        
+        <div class="upload-section">
+            <label for="imageUpload" class="upload-label">
+                <span class="upload-text">Click to upload image or drag & drop</span>
+                <input type="file" id="imageUpload" accept="image/*" style="display: none;">
+            </label>
+        </div>
+
+        <div class="controls-section">
+            <div class="canvas-size-controls">
+                <label for="canvasSize">Canvas Size:</label>
+                <select id="canvasSize">
+                    <option value="twitter-banner">Twitter Banner (1500x500)</option>
+                    <option value="twitter-timeline">Twitter Timeline (1200x675)</option>
+                    <option value="opengraph">OpenGraph (1200x630)</option>
+                    <option value="custom">Custom Size</option>
+                </select>
+                <div id="customSizeInputs" style="display: none;">
+                    <input type="number" id="customWidth" placeholder="Width" value="1200">
+                    <input type="number" id="customHeight" placeholder="Height" value="630">
+                </div>
+            </div>
+
+            <div class="effect-controls">
+                <div class="control-group">
+                    <label for="skewX">Skew X:</label>
+                    <input type="range" id="skewX" min="-30" max="30" value="0" step="0.5">
+                    <span id="skewXValue">0°</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="skewY">Skew Y:</label>
+                    <input type="range" id="skewY" min="-30" max="30" value="0" step="0.5">
+                    <span id="skewYValue">0°</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="grayscale">Grayscale:</label>
+                    <input type="range" id="grayscale" min="0" max="100" value="0" step="1">
+                    <span id="grayscaleValue">0%</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="zoom">Zoom:</label>
+                    <input type="range" id="zoom" min="50" max="200" value="100" step="1">
+                    <span id="zoomValue">100%</span>
+                </div>
+            </div>
+
+            <div class="text-controls">
+                <div class="control-group">
+                    <label for="titleText">Title:</label>
+                    <input type="text" id="titleText" placeholder="Enter title text">
+                </div>
+                
+                <div class="control-group">
+                    <label for="bodyText">Body Text:</label>
+                    <textarea id="bodyText" placeholder="Enter body text" rows="3"></textarea>
+                </div>
+                
+                <div class="control-group">
+                    <label for="textColor">Text Color:</label>
+                    <input type="color" id="textColor" value="#ffffff">
+                </div>
+                
+                <div class="control-group">
+                    <label for="titleSize">Title Size:</label>
+                    <input type="range" id="titleSize" min="20" max="80" value="48" step="2">
+                    <span id="titleSizeValue">48px</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="bodySize">Body Size:</label>
+                    <input type="range" id="bodySize" min="12" max="40" value="24" step="2">
+                    <span id="bodySizeValue">24px</span>
+                </div>
+            </div>
+
+            <div class="action-controls">
+                <button id="resetBtn">Reset</button>
+                <button id="downloadBtn">Download</button>
+            </div>
+        </div>
+
+        <div class="canvas-section">
+            <canvas id="canvas"></canvas>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

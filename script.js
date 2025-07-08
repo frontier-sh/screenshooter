@@ -1,0 +1,428 @@
+class SocialMediaImageCreator {
+    constructor() {
+        this.canvas = document.getElementById('canvas');
+        this.ctx = this.canvas.getContext('2d');
+        this.uploadedImage = null;
+        this.currentSettings = {
+            canvasSize: 'opengraph',
+            skewX: 5,
+            skewY: 5.5,
+            grayscale: 100,
+            zoom: 100,
+            titleText: '',
+            bodyText: '',
+            textColor: '#ffffff',
+            titleSize: 48,
+            bodySize: 24
+        };
+        
+        this.canvasSizes = {
+            'twitter-banner': { width: 1500, height: 500 },
+            'twitter-timeline': { width: 1200, height: 675 },
+            'opengraph': { width: 1200, height: 630 },
+            'custom': { width: 1200, height: 630 }
+        };
+        
+        this.init();
+        this.loadSettings();
+    }
+
+    init() {
+        this.setupEventListeners();
+        this.updateCanvasSize();
+        this.drawCanvas();
+    }
+
+    setupEventListeners() {
+        // File upload
+        const fileInput = document.getElementById('imageUpload');
+        const uploadLabel = document.querySelector('.upload-label');
+        
+        fileInput.addEventListener('change', (e) => this.handleFileUpload(e));
+        
+        // Drag and drop
+        uploadLabel.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadLabel.style.background = '#2a2a2a';
+        });
+        
+        uploadLabel.addEventListener('dragleave', () => {
+            uploadLabel.style.background = 'none';
+        });
+        
+        uploadLabel.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadLabel.style.background = 'none';
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('image/')) {
+                this.loadImage(files[0]);
+            }
+        });
+
+        // Canvas size controls
+        document.getElementById('canvasSize').addEventListener('change', (e) => {
+            this.currentSettings.canvasSize = e.target.value;
+            this.updateCanvasSize();
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        // Custom size inputs
+        document.getElementById('customWidth').addEventListener('input', () => {
+            if (this.currentSettings.canvasSize === 'custom') {
+                this.updateCanvasSize();
+                this.drawCanvas();
+            }
+        });
+
+        document.getElementById('customHeight').addEventListener('input', () => {
+            if (this.currentSettings.canvasSize === 'custom') {
+                this.updateCanvasSize();
+                this.drawCanvas();
+            }
+        });
+
+        // Effect controls
+        document.getElementById('skewX').addEventListener('input', (e) => {
+            this.currentSettings.skewX = parseFloat(e.target.value);
+            document.getElementById('skewXValue').textContent = `${e.target.value}°`;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        document.getElementById('skewY').addEventListener('input', (e) => {
+            this.currentSettings.skewY = parseFloat(e.target.value);
+            document.getElementById('skewYValue').textContent = `${e.target.value}°`;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        document.getElementById('grayscale').addEventListener('input', (e) => {
+            this.currentSettings.grayscale = parseInt(e.target.value);
+            document.getElementById('grayscaleValue').textContent = `${e.target.value}%`;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        document.getElementById('zoom').addEventListener('input', (e) => {
+            this.currentSettings.zoom = parseInt(e.target.value);
+            document.getElementById('zoomValue').textContent = `${e.target.value}%`;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        // Text controls
+        document.getElementById('titleText').addEventListener('input', (e) => {
+            this.currentSettings.titleText = e.target.value;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        document.getElementById('bodyText').addEventListener('input', (e) => {
+            this.currentSettings.bodyText = e.target.value;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        document.getElementById('textColor').addEventListener('input', (e) => {
+            this.currentSettings.textColor = e.target.value;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        document.getElementById('titleSize').addEventListener('input', (e) => {
+            this.currentSettings.titleSize = parseInt(e.target.value);
+            document.getElementById('titleSizeValue').textContent = `${e.target.value}px`;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        document.getElementById('bodySize').addEventListener('input', (e) => {
+            this.currentSettings.bodySize = parseInt(e.target.value);
+            document.getElementById('bodySizeValue').textContent = `${e.target.value}px`;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        // Action buttons
+        document.getElementById('resetBtn').addEventListener('click', () => this.resetAll());
+        document.getElementById('downloadBtn').addEventListener('click', () => this.downloadImage());
+    }
+
+    handleFileUpload(event) {
+        const file = event.target.files[0];
+        if (file && file.type.startsWith('image/')) {
+            this.loadImage(file);
+        }
+    }
+
+    loadImage(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const img = new Image();
+            img.onload = () => {
+                this.uploadedImage = img;
+                this.drawCanvas();
+            };
+            img.src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    updateCanvasSize() {
+        const sizeSelect = document.getElementById('canvasSize');
+        const customInputs = document.getElementById('customSizeInputs');
+        
+        if (sizeSelect.value === 'custom') {
+            customInputs.style.display = 'flex';
+            const width = parseInt(document.getElementById('customWidth').value) || 1200;
+            const height = parseInt(document.getElementById('customHeight').value) || 630;
+            this.canvas.width = width;
+            this.canvas.height = height;
+        } else {
+            customInputs.style.display = 'none';
+            const size = this.canvasSizes[sizeSelect.value];
+            this.canvas.width = size.width;
+            this.canvas.height = size.height;
+        }
+    }
+
+    drawCanvas() {
+        const { width, height } = this.canvas;
+        
+        // Clear canvas
+        this.ctx.clearRect(0, 0, width, height);
+        
+        // Set background
+        this.ctx.fillStyle = '#2a2a2a';
+        this.ctx.fillRect(0, 0, width, height);
+        
+        if (this.uploadedImage) {
+            this.drawImage();
+        }
+        
+        this.drawText();
+    }
+
+    drawImage() {
+        const { width: canvasWidth, height: canvasHeight } = this.canvas;
+        const { width: imgWidth, height: imgHeight } = this.uploadedImage;
+        
+        // Calculate scaling based on zoom to cover entire canvas
+        const zoomFactor = this.currentSettings.zoom / 100;
+        const scale = Math.max(canvasWidth / imgWidth, canvasHeight / imgHeight) * zoomFactor;
+        const scaledWidth = imgWidth * scale;
+        const scaledHeight = imgHeight * scale;
+        
+        // Center the image
+        const x = (canvasWidth - scaledWidth) / 2;
+        const y = (canvasHeight - scaledHeight) / 2;
+        
+        // Save context for transformations
+        this.ctx.save();
+        
+        // Enable antialiasing for smoother rendering
+        this.ctx.imageSmoothingEnabled = true;
+        this.ctx.imageSmoothingQuality = 'high';
+        
+        // Apply skew transformation
+        const skewXRad = (this.currentSettings.skewX * Math.PI) / 180;
+        const skewYRad = (this.currentSettings.skewY * Math.PI) / 180;
+        
+        // Move to center for transformation
+        this.ctx.translate(canvasWidth / 2, canvasHeight / 2);
+        this.ctx.transform(1, Math.tan(skewYRad), Math.tan(skewXRad), 1, 0, 0);
+        this.ctx.translate(-canvasWidth / 2, -canvasHeight / 2);
+        
+        // Apply grayscale filter
+        if (this.currentSettings.grayscale > 0) {
+            this.ctx.filter = `grayscale(${this.currentSettings.grayscale}%)`;
+        }
+        
+        // Draw the image
+        this.ctx.drawImage(this.uploadedImage, x, y, scaledWidth, scaledHeight);
+        
+        // Restore context
+        this.ctx.restore();
+    }
+
+    drawText() {
+        const { width: canvasWidth, height: canvasHeight } = this.canvas;
+        const margin = 40;
+        const lineHeight = 1.2;
+        
+        this.ctx.fillStyle = this.currentSettings.textColor;
+        this.ctx.textAlign = 'left';
+        this.ctx.textBaseline = 'bottom';
+        
+        let yPosition = canvasHeight - margin;
+        
+        // Draw body text first (it goes underneath the title)
+        if (this.currentSettings.bodyText.trim()) {
+            this.ctx.font = `${this.currentSettings.bodySize}px 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace`;
+            
+            const bodyLines = this.wrapText(
+                this.currentSettings.bodyText,
+                canvasWidth - (margin * 2),
+                this.currentSettings.bodySize
+            );
+            
+            // Draw body text lines from bottom up
+            for (let i = bodyLines.length - 1; i >= 0; i--) {
+                this.ctx.fillText(bodyLines[i], margin, yPosition);
+                yPosition -= this.currentSettings.bodySize * lineHeight;
+            }
+            
+            // Add space between body and title
+            yPosition -= 10;
+        }
+        
+        // Draw title text
+        if (this.currentSettings.titleText.trim()) {
+            this.ctx.font = `bold ${this.currentSettings.titleSize}px 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace`;
+            
+            const titleLines = this.wrapText(
+                this.currentSettings.titleText,
+                canvasWidth - (margin * 2),
+                this.currentSettings.titleSize
+            );
+            
+            // Draw title lines from bottom up
+            for (let i = titleLines.length - 1; i >= 0; i--) {
+                this.ctx.fillText(titleLines[i], margin, yPosition);
+                yPosition -= this.currentSettings.titleSize * lineHeight;
+            }
+        }
+    }
+
+    wrapText(text, maxWidth, fontSize) {
+        const words = text.split(' ');
+        const lines = [];
+        let currentLine = '';
+        
+        // Set font for measurement
+        this.ctx.font = `${fontSize}px 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace`;
+        
+        for (let i = 0; i < words.length; i++) {
+            const testLine = currentLine + words[i] + ' ';
+            const metrics = this.ctx.measureText(testLine);
+            
+            if (metrics.width > maxWidth && currentLine) {
+                lines.push(currentLine.trim());
+                currentLine = words[i] + ' ';
+            } else {
+                currentLine = testLine;
+            }
+        }
+        
+        if (currentLine) {
+            lines.push(currentLine.trim());
+        }
+        
+        return lines;
+    }
+
+    resetAll() {
+        this.currentSettings = {
+            canvasSize: 'opengraph',
+            skewX: 5,
+            skewY: 5.5,
+            grayscale: 100,
+            zoom: 100,
+            titleText: '',
+            bodyText: '',
+            textColor: '#ffffff',
+            titleSize: 48,
+            bodySize: 24
+        };
+        
+        this.uploadedImage = null;
+        
+        // Reset UI elements
+        document.getElementById('canvasSize').value = 'opengraph';
+        document.getElementById('skewX').value = 5;
+        document.getElementById('skewY').value = 5.5;
+        document.getElementById('grayscale').value = 100;
+        document.getElementById('zoom').value = 100;
+        document.getElementById('titleText').value = '';
+        document.getElementById('bodyText').value = '';
+        document.getElementById('textColor').value = '#ffffff';
+        document.getElementById('titleSize').value = 48;
+        document.getElementById('bodySize').value = 24;
+        document.getElementById('imageUpload').value = '';
+        
+        // Reset value displays
+        document.getElementById('skewXValue').textContent = '5°';
+        document.getElementById('skewYValue').textContent = '5.5°';
+        document.getElementById('grayscaleValue').textContent = '100%';
+        document.getElementById('zoomValue').textContent = '100%';
+        document.getElementById('titleSizeValue').textContent = '48px';
+        document.getElementById('bodySizeValue').textContent = '24px';
+        
+        this.updateCanvasSize();
+        this.drawCanvas();
+        this.saveSettings();
+    }
+
+    downloadImage() {
+        // Create a temporary link element
+        const link = document.createElement('a');
+        
+        // Generate filename with timestamp
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        const filename = `social-media-image-${timestamp}.png`;
+        
+        // Set the download attributes
+        link.download = filename;
+        link.href = this.canvas.toDataURL('image/png');
+        
+        // Trigger download
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    saveSettings() {
+        localStorage.setItem('socialMediaImageSettings', JSON.stringify(this.currentSettings));
+    }
+
+    loadSettings() {
+        const saved = localStorage.getItem('socialMediaImageSettings');
+        if (saved) {
+            try {
+                const settings = JSON.parse(saved);
+                this.currentSettings = { ...this.currentSettings, ...settings };
+                this.applySettingsToUI();
+            } catch (e) {
+                console.warn('Could not load saved settings:', e);
+            }
+        }
+    }
+
+    applySettingsToUI() {
+        document.getElementById('canvasSize').value = this.currentSettings.canvasSize;
+        document.getElementById('skewX').value = this.currentSettings.skewX;
+        document.getElementById('skewY').value = this.currentSettings.skewY;
+        document.getElementById('grayscale').value = this.currentSettings.grayscale;
+        document.getElementById('zoom').value = this.currentSettings.zoom;
+        document.getElementById('titleText').value = this.currentSettings.titleText;
+        document.getElementById('bodyText').value = this.currentSettings.bodyText;
+        document.getElementById('textColor').value = this.currentSettings.textColor;
+        document.getElementById('titleSize').value = this.currentSettings.titleSize;
+        document.getElementById('bodySize').value = this.currentSettings.bodySize;
+        
+        // Update value displays
+        document.getElementById('skewXValue').textContent = `${this.currentSettings.skewX}°`;
+        document.getElementById('skewYValue').textContent = `${this.currentSettings.skewY}°`;
+        document.getElementById('grayscaleValue').textContent = `${this.currentSettings.grayscale}%`;
+        document.getElementById('zoomValue').textContent = `${this.currentSettings.zoom}%`;
+        document.getElementById('titleSizeValue').textContent = `${this.currentSettings.titleSize}px`;
+        document.getElementById('bodySizeValue').textContent = `${this.currentSettings.bodySize}px`;
+    }
+}
+
+// Initialize the app when the DOM is loaded
+document.addEventListener('DOMContentLoaded', () => {
+    new SocialMediaImageCreator();
+});
