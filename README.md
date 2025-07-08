@@ -1,6 +1,6 @@
 # Screenshooter
 
-A simple, client-side web application for creating social media images with text overlays. Perfect for creating OpenGraph images, Twitter banners, and other social media graphics.
+A simple, client-side web application for creating stunning social media images with text overlays. Perfect for creating OpenGraph images, Twitter banners, and other social media graphics.
 
 This app was written entirely by Claude Sonnet 4, with zero manual intervention.
 
