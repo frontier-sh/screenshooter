@@ -3,12 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Screenshooter</title>
+    <title>Screenshooter - Create Social Media Images with Text Overlays</title>
+    <meta name="description" content="Free online tool to create social media images with text overlays. Perfect for OpenGraph images, Twitter banners, and social media graphics. Add skew effects, grayscale filters, and custom text to your images.">
+    <meta name="keywords" content="social media images, opengraph, twitter banner, image editor, text overlay, skew effect, grayscale filter">
+    <meta name="author" content="Screenshooter">
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="Screenshooter - Create Social Media Images">
+    <meta property="og:description" content="Free online tool to create social media images with text overlays, skew effects, and filters.">
+    <meta property="og:image" content="./og-image.svg">
+    <meta property="og:url" content="">
+    <meta property="og:type" content="website">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Screenshooter - Create Social Media Images">
+    <meta name="twitter:description" content="Free online tool to create social media images with text overlays, skew effects, and filters.">
+    <meta name="twitter:image" content="./og-image.svg">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="./logo.svg">
+    
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
-        <h1>Screenshooter</h1>
+        <header class="app-header">
+            <div class="logo-container">
+                <img src="logo.svg" alt="Screenshooter Logo" class="logo">
+                <h1>Screenshooter</h1>
+            </div>
+            <p class="tagline">Create beautiful social media images with text overlays</p>
+        </header>
         
         <div class="upload-section">
             <label for="imageUpload" class="upload-label">
@@ -56,6 +82,18 @@
                     <input type="range" id="zoom" min="50" max="200" value="100" step="1">
                     <span id="zoomValue">100%</span>
                 </div>
+                
+                <div class="control-group">
+                    <label for="opacity">Image Opacity:</label>
+                    <input type="range" id="opacity" min="0" max="100" value="100" step="1">
+                    <span id="opacityValue">100%</span>
+                </div>
+                
+                <div class="control-group">
+                    <label for="grain">Grain:</label>
+                    <input type="range" id="grain" min="0" max="100" value="0" step="1">
+                    <span id="grainValue">0%</span>
+                </div>
             </div>
 
             <div class="text-controls">
@@ -96,6 +134,10 @@
         <div class="canvas-section">
             <canvas id="canvas"></canvas>
         </div>
+        
+        <footer class="footer">
+            <p>Tool created by <a href="https://frontier.sh/?utm_source=screenshooter" target="_blank" rel="noopener noreferrer">Frontier.sh</a></p>
+        </footer>
     </div>
 
     <script src="script.js"></script>

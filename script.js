@@ -9,6 +9,8 @@ class SocialMediaImageCreator {
             skewY: 5.5,
             grayscale: 100,
             zoom: 100,
+            opacity: 100,
+            grain: 0,
             titleText: '',
             bodyText: '',
             textColor: '#ffffff',
@@ -43,16 +45,16 @@ class SocialMediaImageCreator {
         // Drag and drop
         uploadLabel.addEventListener('dragover', (e) => {
             e.preventDefault();
-            uploadLabel.style.background = '#2a2a2a';
+            uploadLabel.classList.add('dragover');
         });
         
         uploadLabel.addEventListener('dragleave', () => {
-            uploadLabel.style.background = 'none';
+            uploadLabel.classList.remove('dragover');
         });
         
         uploadLabel.addEventListener('drop', (e) => {
             e.preventDefault();
-            uploadLabel.style.background = 'none';
+            uploadLabel.classList.remove('dragover');
             
             const files = e.dataTransfer.files;
             if (files.length > 0 && files[0].type.startsWith('image/')) {
@@ -108,6 +110,20 @@ class SocialMediaImageCreator {
         document.getElementById('zoom').addEventListener('input', (e) => {
             this.currentSettings.zoom = parseInt(e.target.value);
             document.getElementById('zoomValue').textContent = `${e.target.value}%`;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        document.getElementById('opacity').addEventListener('input', (e) => {
+            this.currentSettings.opacity = parseInt(e.target.value);
+            document.getElementById('opacityValue').textContent = `${e.target.value}%`;
+            this.drawCanvas();
+            this.saveSettings();
+        });
+
+        document.getElementById('grain').addEventListener('input', (e) => {
+            this.currentSettings.grain = parseInt(e.target.value);
+            document.getElementById('grainValue').textContent = `${e.target.value}%`;
             this.drawCanvas();
             this.saveSettings();
         });
@@ -240,11 +256,44 @@ class SocialMediaImageCreator {
             this.ctx.filter = `grayscale(${this.currentSettings.grayscale}%)`;
         }
         
+        // Apply opacity
+        this.ctx.globalAlpha = this.currentSettings.opacity / 100;
+        
         // Draw the image
         this.ctx.drawImage(this.uploadedImage, x, y, scaledWidth, scaledHeight);
         
+        // Apply grain effect if enabled
+        if (this.currentSettings.grain > 0) {
+            this.applyGrainEffect(x, y, scaledWidth, scaledHeight);
+        }
+        
         // Restore context
         this.ctx.restore();
+    }
+
+    applyGrainEffect(x, y, width, height) {
+        // Create grain pattern based on intensity
+        const grainIntensity = this.currentSettings.grain / 100;
+        const grainSize = 1; // Size of each grain pixel
+        
+        // Get image data for the area where the image is drawn
+        const imageData = this.ctx.getImageData(x, y, width, height);
+        const data = imageData.data;
+        
+        // Apply grain effect
+        for (let i = 0; i < data.length; i += 4) {
+            // Generate random grain value
+            const grain = (Math.random() - 0.5) * grainIntensity * 100;
+            
+            // Apply grain to RGB channels
+            data[i] = Math.max(0, Math.min(255, data[i] + grain));     // Red
+            data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain)); // Green
+            data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain)); // Blue
+            // Alpha channel (data[i + 3]) remains unchanged
+        }
+        
+        // Put the modified image data back
+        this.ctx.putImageData(imageData, x, y);
     }
 
     drawText() {
@@ -330,6 +379,8 @@ class SocialMediaImageCreator {
             skewY: 5.5,
             grayscale: 100,
             zoom: 100,
+            opacity: 100,
+            grain: 0,
             titleText: '',
             bodyText: '',
             textColor: '#ffffff',
@@ -345,6 +396,8 @@ class SocialMediaImageCreator {
         document.getElementById('skewY').value = 5.5;
         document.getElementById('grayscale').value = 100;
         document.getElementById('zoom').value = 100;
+        document.getElementById('opacity').value = 100;
+        document.getElementById('grain').value = 0;
         document.getElementById('titleText').value = '';
         document.getElementById('bodyText').value = '';
         document.getElementById('textColor').value = '#ffffff';
@@ -357,6 +410,8 @@ class SocialMediaImageCreator {
         document.getElementById('skewYValue').textContent = '5.5°';
         document.getElementById('grayscaleValue').textContent = '100%';
         document.getElementById('zoomValue').textContent = '100%';
+        document.getElementById('opacityValue').textContent = '100%';
+        document.getElementById('grainValue').textContent = '0%';
         document.getElementById('titleSizeValue').textContent = '48px';
         document.getElementById('bodySizeValue').textContent = '24px';
         
@@ -406,6 +461,8 @@ class SocialMediaImageCreator {
         document.getElementById('skewY').value = this.currentSettings.skewY;
         document.getElementById('grayscale').value = this.currentSettings.grayscale;
         document.getElementById('zoom').value = this.currentSettings.zoom;
+        document.getElementById('opacity').value = this.currentSettings.opacity;
+        document.getElementById('grain').value = this.currentSettings.grain;
         document.getElementById('titleText').value = this.currentSettings.titleText;
         document.getElementById('bodyText').value = this.currentSettings.bodyText;
         document.getElementById('textColor').value = this.currentSettings.textColor;
@@ -417,6 +474,8 @@ class SocialMediaImageCreator {
         document.getElementById('skewYValue').textContent = `${this.currentSettings.skewY}°`;
         document.getElementById('grayscaleValue').textContent = `${this.currentSettings.grayscale}%`;
         document.getElementById('zoomValue').textContent = `${this.currentSettings.zoom}%`;
+        document.getElementById('opacityValue').textContent = `${this.currentSettings.opacity}%`;
+        document.getElementById('grainValue').textContent = `${this.currentSettings.grain}%`;
         document.getElementById('titleSizeValue').textContent = `${this.currentSettings.titleSize}px`;
         document.getElementById('bodySizeValue').textContent = `${this.currentSettings.bodySize}px`;
     }
