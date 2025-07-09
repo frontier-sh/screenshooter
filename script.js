@@ -262,49 +262,94 @@ class SocialMediaImageCreator {
 		this.ctx.transform(1, Math.tan(skewYRad), Math.tan(skewXRad), 1, 0, 0);
 		this.ctx.translate(-canvasWidth / 2, -canvasHeight / 2);
 
-		// Apply grayscale filter
-		if (this.currentSettings.grayscale > 0) {
-			this.ctx.filter = `grayscale(${this.currentSettings.grayscale}%)`;
-		}
-
 		// Apply opacity
 		this.ctx.globalAlpha = this.currentSettings.opacity / 100;
 
 		// Draw the image
 		this.ctx.drawImage(this.uploadedImage, x, y, scaledWidth, scaledHeight);
 
-		// Apply grain effect if enabled
-		if (this.currentSettings.grain > 0) {
-			this.applyGrainEffect(x, y, scaledWidth, scaledHeight);
+		// Apply grayscale and grain effects if enabled
+		if (this.currentSettings.grayscale > 0 || this.currentSettings.grain > 0) {
+			this.applyImageEffects(x, y, scaledWidth, scaledHeight);
 		}
 
 		// Restore context
 		this.ctx.restore();
 	}
 
-	applyGrainEffect(x, y, width, height) {
-		// Create grain pattern based on intensity
-		const grainIntensity = this.currentSettings.grain / 100;
-		const grainSize = 1; // Size of each grain pixel
+	applyImageEffects(x, y, width, height) {
+		// Ensure coordinates are integers and within bounds
+		x = Math.floor(x);
+		y = Math.floor(y);
+		width = Math.floor(width);
+		height = Math.floor(height);
 
-		// Get image data for the area where the image is drawn
-		const imageData = this.ctx.getImageData(x, y, width, height);
-		const data = imageData.data;
-
-		// Apply grain effect
-		for (let i = 0; i < data.length; i += 4) {
-			// Generate random grain value
-			const grain = (Math.random() - 0.5) * grainIntensity * 100;
-
-			// Apply grain to RGB channels
-			data[i] = Math.max(0, Math.min(255, data[i] + grain)); // Red
-			data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain)); // Green
-			data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain)); // Blue
-			// Alpha channel (data[i + 3]) remains unchanged
+		// Clamp to canvas bounds
+		const canvasWidth = this.canvas.width;
+		const canvasHeight = this.canvas.height;
+		
+		if (x < 0) {
+			width += x;
+			x = 0;
+		}
+		if (y < 0) {
+			height += y;
+			y = 0;
+		}
+		if (x + width > canvasWidth) {
+			width = canvasWidth - x;
+		}
+		if (y + height > canvasHeight) {
+			height = canvasHeight - y;
 		}
 
-		// Put the modified image data back
-		this.ctx.putImageData(imageData, x, y);
+		// Skip if dimensions are invalid
+		if (width <= 0 || height <= 0) return;
+
+		try {
+			// Get image data for the area where the image is drawn
+			const imageData = this.ctx.getImageData(x, y, width, height);
+			const data = imageData.data;
+
+			const grayscaleIntensity = this.currentSettings.grayscale / 100;
+			const grainIntensity = this.currentSettings.grain / 100;
+
+			// Apply effects pixel by pixel
+			for (let i = 0; i < data.length; i += 4) {
+				const r = data[i];
+				const g = data[i + 1];
+				const b = data[i + 2];
+				
+				// Apply grayscale effect
+				if (this.currentSettings.grayscale > 0) {
+					// Using luminance formula for better grayscale conversion
+					const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+					
+					// Blend between original color and grayscale based on intensity
+					data[i] = r + (gray - r) * grayscaleIntensity;     // Red
+					data[i + 1] = g + (gray - g) * grayscaleIntensity; // Green
+					data[i + 2] = b + (gray - b) * grayscaleIntensity; // Blue
+				}
+
+				// Apply grain effect
+				if (this.currentSettings.grain > 0) {
+					// Generate random grain value
+					const grain = (Math.random() - 0.5) * grainIntensity * 100;
+
+					// Apply grain to RGB channels
+					data[i] = Math.max(0, Math.min(255, data[i] + grain));     // Red
+					data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain)); // Green
+					data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain)); // Blue
+				}
+				
+				// Alpha channel (data[i + 3]) remains unchanged
+			}
+
+			// Put the modified image data back
+			this.ctx.putImageData(imageData, x, y);
+		} catch (e) {
+			console.warn("Could not apply image effects:", e);
+		}
 	}
 
 	drawText() {
