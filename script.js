@@ -14,6 +14,7 @@ class SocialMediaImageCreator {
 			titleText: "",
 			bodyText: "",
 			textColor: "#ffffff",
+			textAlign: "left",
 			titleSize: 48,
 			bodySize: 24,
 			imageX: 0,
@@ -153,6 +154,12 @@ class SocialMediaImageCreator {
 			this.saveSettings();
 		});
 
+		document.getElementById("textAlign").addEventListener("change", (e) => {
+			this.currentSettings.textAlign = e.target.value;
+			this.drawCanvas();
+			this.saveSettings();
+		});
+
 		document.getElementById("titleSize").addEventListener("input", (e) => {
 			this.currentSettings.titleSize = parseInt(e.target.value);
 			document.getElementById("titleSizeValue").textContent = `${e.target.value}px`;
@@ -287,7 +294,7 @@ class SocialMediaImageCreator {
 		// Clamp to canvas bounds
 		const canvasWidth = this.canvas.width;
 		const canvasHeight = this.canvas.height;
-		
+
 		if (x < 0) {
 			width += x;
 			x = 0;
@@ -319,14 +326,14 @@ class SocialMediaImageCreator {
 				const r = data[i];
 				const g = data[i + 1];
 				const b = data[i + 2];
-				
+
 				// Apply grayscale effect
 				if (this.currentSettings.grayscale > 0) {
 					// Using luminance formula for better grayscale conversion
 					const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-					
+
 					// Blend between original color and grayscale based on intensity
-					data[i] = r + (gray - r) * grayscaleIntensity;     // Red
+					data[i] = r + (gray - r) * grayscaleIntensity; // Red
 					data[i + 1] = g + (gray - g) * grayscaleIntensity; // Green
 					data[i + 2] = b + (gray - b) * grayscaleIntensity; // Blue
 				}
@@ -337,11 +344,11 @@ class SocialMediaImageCreator {
 					const grain = (Math.random() - 0.5) * grainIntensity * 100;
 
 					// Apply grain to RGB channels
-					data[i] = Math.max(0, Math.min(255, data[i] + grain));     // Red
+					data[i] = Math.max(0, Math.min(255, data[i] + grain)); // Red
 					data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain)); // Green
 					data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain)); // Blue
 				}
-				
+
 				// Alpha channel (data[i + 3]) remains unchanged
 			}
 
@@ -358,10 +365,18 @@ class SocialMediaImageCreator {
 		const lineHeight = 1.2;
 
 		this.ctx.fillStyle = this.currentSettings.textColor;
-		this.ctx.textAlign = "left";
+		this.ctx.textAlign = this.currentSettings.textAlign;
 		this.ctx.textBaseline = "bottom";
 
 		let yPosition = canvasHeight - margin;
+
+		// Calculate x position based on alignment
+		const getXPosition = () => {
+			if (this.currentSettings.textAlign === "right") {
+				return canvasWidth - margin;
+			}
+			return margin; // left alignment
+		};
 
 		// Draw body text first (it goes underneath the title)
 		if (this.currentSettings.bodyText.trim()) {
@@ -371,7 +386,7 @@ class SocialMediaImageCreator {
 
 			// Draw body text lines from bottom up
 			for (let i = bodyLines.length - 1; i >= 0; i--) {
-				this.ctx.fillText(bodyLines[i], margin, yPosition);
+				this.ctx.fillText(bodyLines[i], getXPosition(), yPosition);
 				yPosition -= this.currentSettings.bodySize * lineHeight;
 			}
 
@@ -387,7 +402,7 @@ class SocialMediaImageCreator {
 
 			// Draw title lines from bottom up
 			for (let i = titleLines.length - 1; i >= 0; i--) {
-				this.ctx.fillText(titleLines[i], margin, yPosition);
+				this.ctx.fillText(titleLines[i], getXPosition(), yPosition);
 				yPosition -= this.currentSettings.titleSize * lineHeight;
 			}
 		}
@@ -432,6 +447,7 @@ class SocialMediaImageCreator {
 			titleText: "",
 			bodyText: "",
 			textColor: "#ffffff",
+			textAlign: "left",
 			titleSize: 48,
 			bodySize: 24,
 			imageX: 0,
@@ -451,6 +467,7 @@ class SocialMediaImageCreator {
 		document.getElementById("titleText").value = "";
 		document.getElementById("bodyText").value = "";
 		document.getElementById("textColor").value = "#ffffff";
+		document.getElementById("textAlign").value = "left";
 		document.getElementById("titleSize").value = 48;
 		document.getElementById("bodySize").value = 24;
 		document.getElementById("imageUpload").value = "";
@@ -524,6 +541,7 @@ class SocialMediaImageCreator {
 		document.getElementById("titleText").value = this.currentSettings.titleText;
 		document.getElementById("bodyText").value = this.currentSettings.bodyText;
 		document.getElementById("textColor").value = this.currentSettings.textColor;
+		document.getElementById("textAlign").value = this.currentSettings.textAlign;
 		document.getElementById("titleSize").value = this.currentSettings.titleSize;
 		document.getElementById("bodySize").value = this.currentSettings.bodySize;
 
@@ -551,7 +569,7 @@ class SocialMediaImageCreator {
 			const touch = e.touches[0];
 			const mouseEvent = new MouseEvent("mousedown", {
 				clientX: touch.clientX,
-				clientY: touch.clientY
+				clientY: touch.clientY,
 			});
 			this.startDrag(mouseEvent);
 		});
@@ -561,7 +579,7 @@ class SocialMediaImageCreator {
 			const touch = e.touches[0];
 			const mouseEvent = new MouseEvent("mousemove", {
 				clientX: touch.clientX,
-				clientY: touch.clientY
+				clientY: touch.clientY,
 			});
 			this.drag(mouseEvent);
 		});
@@ -592,7 +610,7 @@ class SocialMediaImageCreator {
 		const rect = this.canvas.getBoundingClientRect();
 		this.lastMousePos = {
 			x: e.clientX - rect.left,
-			y: e.clientY - rect.top
+			y: e.clientY - rect.top,
 		};
 	}
 
@@ -602,7 +620,7 @@ class SocialMediaImageCreator {
 		const rect = this.canvas.getBoundingClientRect();
 		const currentMousePos = {
 			x: e.clientX - rect.left,
-			y: e.clientY - rect.top
+			y: e.clientY - rect.top,
 		};
 
 		// Calculate the delta movement
