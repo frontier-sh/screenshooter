@@ -19,12 +19,16 @@ class SocialMediaImageCreator {
 			bodySize: 24,
 			imageX: 0,
 			imageY: 0,
+			backgroundColor: "#2a2a2a",
+			transparentBackground: false,
 		};
 
 		this.canvasSizes = {
 			"twitter-banner": { width: 1500, height: 500 },
 			"twitter-timeline": { width: 1200, height: 675 },
 			opengraph: { width: 1200, height: 630 },
+			"16-9": { width: 1280, height: 720 },
+			email: { width: 545, height: 310 },
 			custom: { width: 1200, height: 630 },
 		};
 
@@ -174,6 +178,19 @@ class SocialMediaImageCreator {
 			this.saveSettings();
 		});
 
+		// Background controls
+		document.getElementById("backgroundColor").addEventListener("input", (e) => {
+			this.currentSettings.backgroundColor = e.target.value;
+			this.drawCanvas();
+			this.saveSettings();
+		});
+
+		document.getElementById("transparentBackground").addEventListener("change", (e) => {
+			this.currentSettings.transparentBackground = e.target.checked;
+			this.drawCanvas();
+			this.saveSettings();
+		});
+
 		// Action buttons
 		document.getElementById("resetBtn").addEventListener("click", () => this.resetAll());
 		document.getElementById("resetPositionBtn").addEventListener("click", () => this.resetImagePosition());
@@ -228,12 +245,19 @@ class SocialMediaImageCreator {
 		// Clear canvas
 		this.ctx.clearRect(0, 0, width, height);
 
-		// Set background
-		this.ctx.fillStyle = "#2a2a2a";
-		this.ctx.fillRect(0, 0, width, height);
+		// Set background (transparent or colored)
+		if (!this.currentSettings.transparentBackground) {
+			this.ctx.fillStyle = this.currentSettings.backgroundColor;
+			this.ctx.fillRect(0, 0, width, height);
+		}
 
 		if (this.uploadedImage) {
 			this.drawImage();
+		}
+
+		// Apply grain effect to entire canvas (after image, before text)
+		if (this.currentSettings.grain > 0) {
+			this.applyGrainEffect();
 		}
 
 		this.drawText();
@@ -275,16 +299,16 @@ class SocialMediaImageCreator {
 		// Draw the image
 		this.ctx.drawImage(this.uploadedImage, x, y, scaledWidth, scaledHeight);
 
-		// Apply grayscale and grain effects if enabled
-		if (this.currentSettings.grayscale > 0 || this.currentSettings.grain > 0) {
-			this.applyImageEffects(x, y, scaledWidth, scaledHeight);
+		// Apply grayscale effect if enabled (only to image area)
+		if (this.currentSettings.grayscale > 0) {
+			this.applyGrayscaleEffect(x, y, scaledWidth, scaledHeight);
 		}
 
 		// Restore context
 		this.ctx.restore();
 	}
 
-	applyImageEffects(x, y, width, height) {
+	applyGrayscaleEffect(x, y, width, height) {
 		// Ensure coordinates are integers and within bounds
 		x = Math.floor(x);
 		y = Math.floor(y);
@@ -319,35 +343,20 @@ class SocialMediaImageCreator {
 			const data = imageData.data;
 
 			const grayscaleIntensity = this.currentSettings.grayscale / 100;
-			const grainIntensity = this.currentSettings.grain / 100;
 
-			// Apply effects pixel by pixel
+			// Apply grayscale effect pixel by pixel
 			for (let i = 0; i < data.length; i += 4) {
 				const r = data[i];
 				const g = data[i + 1];
 				const b = data[i + 2];
 
-				// Apply grayscale effect
-				if (this.currentSettings.grayscale > 0) {
-					// Using luminance formula for better grayscale conversion
-					const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+				// Using luminance formula for better grayscale conversion
+				const gray = 0.299 * r + 0.587 * g + 0.114 * b;
 
-					// Blend between original color and grayscale based on intensity
-					data[i] = r + (gray - r) * grayscaleIntensity; // Red
-					data[i + 1] = g + (gray - g) * grayscaleIntensity; // Green
-					data[i + 2] = b + (gray - b) * grayscaleIntensity; // Blue
-				}
-
-				// Apply grain effect
-				if (this.currentSettings.grain > 0) {
-					// Generate random grain value
-					const grain = (Math.random() - 0.5) * grainIntensity * 100;
-
-					// Apply grain to RGB channels
-					data[i] = Math.max(0, Math.min(255, data[i] + grain)); // Red
-					data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain)); // Green
-					data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain)); // Blue
-				}
+				// Blend between original color and grayscale based on intensity
+				data[i] = r + (gray - r) * grayscaleIntensity; // Red
+				data[i + 1] = g + (gray - g) * grayscaleIntensity; // Green
+				data[i + 2] = b + (gray - b) * grayscaleIntensity; // Blue
 
 				// Alpha channel (data[i + 3]) remains unchanged
 			}
@@ -355,7 +364,38 @@ class SocialMediaImageCreator {
 			// Put the modified image data back
 			this.ctx.putImageData(imageData, x, y);
 		} catch (e) {
-			console.warn("Could not apply image effects:", e);
+			console.warn("Could not apply grayscale effect:", e);
+		}
+	}
+
+	applyGrainEffect() {
+		const canvasWidth = this.canvas.width;
+		const canvasHeight = this.canvas.height;
+
+		try {
+			// Get image data for entire canvas
+			const imageData = this.ctx.getImageData(0, 0, canvasWidth, canvasHeight);
+			const data = imageData.data;
+
+			const grainIntensity = this.currentSettings.grain / 100;
+
+			// Apply grain effect pixel by pixel to entire canvas
+			for (let i = 0; i < data.length; i += 4) {
+				// Generate random grain value
+				const grain = (Math.random() - 0.5) * grainIntensity * 100;
+
+				// Apply grain to RGB channels
+				data[i] = Math.max(0, Math.min(255, data[i] + grain)); // Red
+				data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain)); // Green
+				data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain)); // Blue
+
+				// Alpha channel (data[i + 3]) remains unchanged
+			}
+
+			// Put the modified image data back
+			this.ctx.putImageData(imageData, 0, 0);
+		} catch (e) {
+			console.warn("Could not apply grain effect:", e);
 		}
 	}
 
@@ -452,6 +492,8 @@ class SocialMediaImageCreator {
 			bodySize: 24,
 			imageX: 0,
 			imageY: 0,
+			backgroundColor: "#2a2a2a",
+			transparentBackground: false,
 		};
 
 		this.uploadedImage = null;
@@ -471,6 +513,8 @@ class SocialMediaImageCreator {
 		document.getElementById("titleSize").value = 48;
 		document.getElementById("bodySize").value = 24;
 		document.getElementById("imageUpload").value = "";
+		document.getElementById("backgroundColor").value = "#2a2a2a";
+		document.getElementById("transparentBackground").checked = false;
 
 		// Reset value displays
 		document.getElementById("skewXValue").textContent = "5°";
@@ -505,6 +549,7 @@ class SocialMediaImageCreator {
 
 		// Set the download attributes
 		link.download = filename;
+		// Use image/png to support transparency
 		link.href = this.canvas.toDataURL("image/png");
 
 		// Trigger download
@@ -544,6 +589,8 @@ class SocialMediaImageCreator {
 		document.getElementById("textAlign").value = this.currentSettings.textAlign;
 		document.getElementById("titleSize").value = this.currentSettings.titleSize;
 		document.getElementById("bodySize").value = this.currentSettings.bodySize;
+		document.getElementById("backgroundColor").value = this.currentSettings.backgroundColor;
+		document.getElementById("transparentBackground").checked = this.currentSettings.transparentBackground;
 
 		// Update value displays
 		document.getElementById("skewXValue").textContent = `${this.currentSettings.skewX}°`;

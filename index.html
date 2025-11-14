@@ -27,15 +27,30 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="container">
-        <header class="app-header">
-            <div class="logo-container">
-                <img src="logo.svg" alt="Screenshooter Logo" class="logo">
-                <h1>Screenshooter</h1>
+    <header class="app-header">
+        <div class="header-content">
+            <div class="header-left">
+                <div class="logo-container">
+                    <img src="logo.svg" alt="Screenshooter Logo" class="logo">
+                    <div class="title-tagline">
+                        <h1>Screenshooter</h1>
+                        <p class="tagline">Create stunning social media images</p>
+                    </div>
+                </div>
             </div>
-            <p class="tagline">Create stunning social media images</p>
-        </header>
-        
+            <div class="header-right">
+                <a href="https://rivets.dev/?utm_source=screenshooter" class="cta-button" target="_blank" rel="noopener noreferrer">
+                    <span class="decoration decoration-tl"></span>
+                    <span class="decoration decoration-tr"></span>
+                    <span class="decoration decoration-bl"></span>
+                    <span class="decoration decoration-br"></span>
+                    Break free from your IDE with Rivets.dev →
+                </a>
+            </div>
+        </div>
+    </header>
+    
+    <div class="container">
         <div class="upload-section">
             <label for="imageUpload" class="upload-label">
                 <span class="upload-text">Click to upload image or drag & drop</span>
@@ -50,11 +65,27 @@
                     <option value="twitter-banner">Twitter Banner (1500x500)</option>
                     <option value="twitter-timeline">Twitter Timeline (1200x675)</option>
                     <option value="opengraph">OpenGraph (1200x630)</option>
+                    <option value="16-9">16:9 Ratio (1280x720)</option>
+                    <option value="email">Email (545x310)</option>
                     <option value="custom">Custom Size</option>
                 </select>
                 <div id="customSizeInputs" style="display: none;">
                     <input type="number" id="customWidth" placeholder="Width" value="1200">
                     <input type="number" id="customHeight" placeholder="Height" value="630">
+                </div>
+            </div>
+
+            <div class="background-controls">
+                <div class="control-group">
+                    <label for="backgroundColor">Background Color:</label>
+                    <input type="color" id="backgroundColor" value="#2a2a2a">
+                </div>
+                
+                <div class="control-group">
+                    <label>
+                        <input type="checkbox" id="transparentBackground">
+                        Transparent Background
+                    </label>
                 </div>
             </div>
 
@@ -143,11 +174,13 @@
         <div class="canvas-section">
             <canvas id="canvas"></canvas>
         </div>
-        
-        <footer class="footer">
-            <p>Tool created by <a href="https://frontier.sh/?utm_source=screenshooter" target="_blank" rel="noopener noreferrer">Frontier.sh</a></p>
-        </footer>
     </div>
+    
+    <footer class="footer">
+        <div class="footer-content">
+            <p>Tool created by <a href="https://frontier.sh/?utm_source=screenshooter" target="_blank" rel="noopener noreferrer">Frontier.sh</a></p>
+        </div>
+    </footer>
 
     <script src="script.js"></script>
 </body>
