@@ -7,180 +7,249 @@
     <meta name="description" content="Create consistent, beautiful social media images with text overlays, effects, and filters. Free online tool with no registration required.">
     <meta name="keywords" content="social media images, opengraph, twitter banner, image editor, text overlay, skew effect, grayscale filter">
     <meta name="author" content="Screenshooter">
-    
+
     <!-- Open Graph -->
     <meta property="og:title" content="Screenshooter - Create Social Media Images">
     <meta property="og:description" content="Create stunning social media images with text overlays, skew effects, and filters.">
     <meta property="og:image" content="./og-image.svg">
     <meta property="og:url" content="">
     <meta property="og:type" content="website">
-    
+
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="Screenshooter - Create Social Media Images">
     <meta name="twitter:description" content="Create stunning social media images with text overlays, skew effects, and filters.">
     <meta name="twitter:image" content="./og-image.svg">
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="./logo.svg">
-    
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <header class="app-header">
-        <div class="header-content">
-            <div class="header-left">
-                <div class="logo-container">
-                    <img src="logo.svg" alt="Screenshooter Logo" class="logo">
-                    <div class="title-tagline">
-                        <h1>Screenshooter</h1>
-                        <p class="tagline">Create stunning social media images</p>
+    <div class="app-layout">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-left">
+                    <div class="logo-container">
+                        <img src="logo.svg" alt="Screenshooter Logo" class="logo">
+                        <div class="title-tagline">
+                            <h1>Screenshooter</h1>
+                            <p class="tagline">Create stunning social media images</p>
+                        </div>
                     </div>
                 </div>
+                <div class="header-right">
+                    <a href="https://rivets.dev/?utm_source=screenshooter" class="cta-button" target="_blank" rel="noopener noreferrer">
+                        <span class="decoration decoration-tl"></span>
+                        <span class="decoration decoration-tr"></span>
+                        <span class="decoration decoration-bl"></span>
+                        <span class="decoration decoration-br"></span>
+                        Break free from your IDE with Rivets.dev →
+                    </a>
+                </div>
             </div>
-            <div class="header-right">
-                <a href="https://rivets.dev/?utm_source=screenshooter" class="cta-button" target="_blank" rel="noopener noreferrer">
-                    <span class="decoration decoration-tl"></span>
-                    <span class="decoration decoration-tr"></span>
-                    <span class="decoration decoration-bl"></span>
-                    <span class="decoration decoration-br"></span>
-                    Break free from your IDE with Rivets.dev →
-                </a>
-            </div>
-        </div>
-    </header>
-    
-    <div class="container">
-        <div class="upload-section">
-            <label for="imageUpload" class="upload-label">
-                <span class="upload-text">Click to upload image or drag & drop</span>
+        </header>
+
+        <div class="app-body">
+            <main class="canvas-area">
                 <input type="file" id="imageUpload" accept="image/*" style="display: none;">
-            </label>
-        </div>
+                <div class="canvas-wrapper">
+                    <canvas id="canvas"></canvas>
+                </div>
+            </main>
 
-        <div class="controls-section">
-            <div class="canvas-size-controls">
-                <label for="canvasSize">Canvas Size:</label>
-                <select id="canvasSize">
-                    <option value="twitter-banner">Twitter Banner (1500x500)</option>
-                    <option value="twitter-timeline">Twitter Timeline (1200x675)</option>
-                    <option value="opengraph">OpenGraph (1200x630)</option>
-                    <option value="16-9">16:9 Ratio (1280x720)</option>
-                    <option value="email">Email (545x310)</option>
-                    <option value="custom">Custom Size</option>
-                </select>
-                <div id="customSizeInputs" style="display: none;">
-                    <input type="number" id="customWidth" placeholder="Width" value="1200">
-                    <input type="number" id="customHeight" placeholder="Height" value="630">
-                </div>
-            </div>
+            <aside class="sidebar">
+                <!-- Canvas Size & Background -->
+                <div class="sidebar-section" data-section="canvas">
+                    <button class="section-toggle" aria-expanded="true">
+                        <span class="section-title">Canvas</span>
+                        <svg class="toggle-icon" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <div class="section-content">
+                        <div class="control-group">
+                            <label for="canvasSize">Size</label>
+                            <select id="canvasSize">
+                                <option value="twitter-banner">Twitter Banner (1500x500)</option>
+                                <option value="twitter-timeline">Twitter Timeline (1200x675)</option>
+                                <option value="opengraph">OpenGraph (1200x630)</option>
+                                <option value="16-9">16:9 Ratio (1280x720)</option>
+                                <option value="email">Email (545x310)</option>
+                                <option value="custom">Custom Size</option>
+                            </select>
+                            <div id="customSizeInputs" style="display: none;">
+                                <input type="number" id="customWidth" placeholder="Width" value="1200">
+                                <input type="number" id="customHeight" placeholder="Height" value="630">
+                            </div>
+                        </div>
 
-            <div class="background-controls">
-                <div class="control-group">
-                    <label for="backgroundColor">Background Color:</label>
-                    <input type="color" id="backgroundColor" value="#2a2a2a">
+                        <div class="control-group">
+                            <label for="backgroundColor">Background</label>
+                            <div class="color-row">
+                                <input type="color" id="backgroundColor" value="#2a2a2a">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="transparentBackground">
+                                    Transparent
+                                </label>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                
-                <div class="control-group">
-                    <label>
-                        <input type="checkbox" id="transparentBackground">
-                        Transparent Background
-                    </label>
-                </div>
-            </div>
 
-            <div class="effect-controls">
-                <div class="control-group">
-                    <label for="skewX">Skew X:</label>
-                    <input type="range" id="skewX" min="-30" max="30" value="0" step="0.5">
-                    <span id="skewXValue">0°</span>
-                </div>
-                
-                <div class="control-group">
-                    <label for="skewY">Skew Y:</label>
-                    <input type="range" id="skewY" min="-30" max="30" value="0" step="0.5">
-                    <span id="skewYValue">0°</span>
-                </div>
-                
-                <div class="control-group">
-                    <label for="grayscale">Grayscale:</label>
-                    <input type="range" id="grayscale" min="0" max="100" value="0" step="1">
-                    <span id="grayscaleValue">0%</span>
-                </div>
-                
-                <div class="control-group">
-                    <label for="zoom">Zoom:</label>
-                    <input type="range" id="zoom" min="50" max="200" value="100" step="1">
-                    <span id="zoomValue">100%</span>
-                </div>
-                
-                <div class="control-group">
-                    <label for="opacity">Image Opacity:</label>
-                    <input type="range" id="opacity" min="0" max="100" value="100" step="1">
-                    <span id="opacityValue">100%</span>
-                </div>
-                
-                <div class="control-group">
-                    <label for="grain">Grain:</label>
-                    <input type="range" id="grain" min="0" max="100" value="0" step="1">
-                    <span id="grainValue">0%</span>
-                </div>
-            </div>
+                <!-- Effects -->
+                <div class="sidebar-section" data-section="effects">
+                    <button class="section-toggle" aria-expanded="true">
+                        <span class="section-title">Effects</span>
+                        <svg class="toggle-icon" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <div class="section-content">
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="skewX">Skew X</label>
+                                <span id="skewXValue">0°</span>
+                            </div>
+                            <input type="range" id="skewX" min="-30" max="30" value="0" step="0.5">
+                        </div>
 
-            <div class="text-controls">
-                <div class="control-group">
-                    <label for="titleText">Title:</label>
-                    <input type="text" id="titleText" placeholder="Enter title text">
-                </div>
-                
-                <div class="control-group">
-                    <label for="bodyText">Body Text:</label>
-                    <textarea id="bodyText" placeholder="Enter body text" rows="3"></textarea>
-                </div>
-                
-                <div class="control-group">
-                    <label for="textColor">Text Color:</label>
-                    <input type="color" id="textColor" value="#ffffff">
-                </div>
-                
-                <div class="control-group">
-                    <label for="textAlign">Text Alignment:</label>
-                    <select id="textAlign">
-                        <option value="left">Left</option>
-                        <option value="right">Right</option>
-                    </select>
-                </div>
-                
-                <div class="control-group">
-                    <label for="titleSize">Title Size:</label>
-                    <input type="range" id="titleSize" min="20" max="80" value="48" step="2">
-                    <span id="titleSizeValue">48px</span>
-                </div>
-                
-                <div class="control-group">
-                    <label for="bodySize">Body Size:</label>
-                    <input type="range" id="bodySize" min="12" max="40" value="24" step="2">
-                    <span id="bodySizeValue">24px</span>
-                </div>
-            </div>
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="skewY">Skew Y</label>
+                                <span id="skewYValue">0°</span>
+                            </div>
+                            <input type="range" id="skewY" min="-30" max="30" value="0" step="0.5">
+                        </div>
 
-            <div class="action-controls">
-                <button id="resetBtn">Reset</button>
-                <button id="resetPositionBtn">Reset Position</button>
-                <button id="downloadBtn">Download</button>
-            </div>
-        </div>
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="grayscale">Grayscale</label>
+                                <span id="grayscaleValue">0%</span>
+                            </div>
+                            <input type="range" id="grayscale" min="0" max="100" value="0" step="1">
+                        </div>
 
-        <div class="canvas-section">
-            <canvas id="canvas"></canvas>
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="zoom">Zoom</label>
+                                <span id="zoomValue">100%</span>
+                            </div>
+                            <input type="range" id="zoom" min="50" max="200" value="100" step="1">
+                        </div>
+
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="opacity">Opacity</label>
+                                <span id="opacityValue">100%</span>
+                            </div>
+                            <input type="range" id="opacity" min="0" max="100" value="100" step="1">
+                        </div>
+
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="grain">Grain</label>
+                                <span id="grainValue">0%</span>
+                            </div>
+                            <input type="range" id="grain" min="0" max="100" value="0" step="1">
+                        </div>
+
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="dofIntensity">Depth of Field</label>
+                                <span id="dofIntensityValue">0px</span>
+                            </div>
+                            <input type="range" id="dofIntensity" min="0" max="20" value="0" step="0.5">
+                        </div>
+
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="dofSize">DoF Focus Size</label>
+                                <span id="dofSizeValue">50%</span>
+                            </div>
+                            <input type="range" id="dofSize" min="10" max="80" value="50" step="1">
+                        </div>
+
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="dofFocusX">DoF Focus X</label>
+                                <span id="dofFocusXValue">50%</span>
+                            </div>
+                            <input type="range" id="dofFocusX" min="0" max="100" value="50" step="1">
+                        </div>
+
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="dofFocusY">DoF Focus Y</label>
+                                <span id="dofFocusYValue">50%</span>
+                            </div>
+                            <input type="range" id="dofFocusY" min="0" max="100" value="50" step="1">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Text -->
+                <div class="sidebar-section" data-section="text">
+                    <button class="section-toggle" aria-expanded="true">
+                        <span class="section-title">Text</span>
+                        <svg class="toggle-icon" width="10" height="6" viewBox="0 0 10 6" fill="none"><path d="M1 1L5 5L9 1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    </button>
+                    <div class="section-content">
+                        <div class="control-group">
+                            <label for="titleText">Title</label>
+                            <input type="text" id="titleText" placeholder="Enter title text">
+                        </div>
+
+                        <div class="control-group">
+                            <label for="bodyText">Body</label>
+                            <textarea id="bodyText" placeholder="Enter body text" rows="3"></textarea>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="textColor">Color</label>
+                            <input type="color" id="textColor" value="#ffffff">
+                        </div>
+
+                        <div class="control-group">
+                            <label for="textAlign">Alignment</label>
+                            <select id="textAlign">
+                                <option value="left">Left</option>
+                                <option value="right">Right</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="titleSize">Title Size</label>
+                                <span id="titleSizeValue">48px</span>
+                            </div>
+                            <input type="range" id="titleSize" min="20" max="80" value="48" step="2">
+                        </div>
+
+                        <div class="control-group">
+                            <div class="range-header">
+                                <label for="bodySize">Body Size</label>
+                                <span id="bodySizeValue">24px</span>
+                            </div>
+                            <input type="range" id="bodySize" min="12" max="40" value="24" step="2">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="sidebar-actions">
+                    <button id="resetBtn">Reset</button>
+                    <button id="resetPositionBtn">Reset Position</button>
+                    <button id="downloadBtn" class="download-btn">Download PNG</button>
+                </div>
+
+                <footer class="sidebar-footer">
+                    <p>Tool created by <a href="https://frontier.sh/?utm_source=screenshooter" target="_blank" rel="noopener noreferrer">Frontier.sh</a></p>
+                </footer>
+            </aside>
         </div>
     </div>
-    
-    <footer class="footer">
-        <div class="footer-content">
-            <p>Tool created by <a href="https://frontier.sh/?utm_source=screenshooter" target="_blank" rel="noopener noreferrer">Frontier.sh</a></p>
-        </div>
-    </footer>
+
+    <button class="sidebar-toggle-mobile" aria-label="Toggle controls">
+        <svg width="20" height="16" viewBox="0 0 20 16" fill="none"><path d="M1 1H19M1 8H19M1 15H19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+    </button>
 
     <script src="script.js"></script>
 </body>

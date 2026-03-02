@@ -11,6 +11,10 @@ class SocialMediaImageCreator {
 			zoom: 100,
 			opacity: 100,
 			grain: 0,
+			dofIntensity: 0,
+			dofSize: 50,
+			dofFocusX: 50,
+			dofFocusY: 50,
 			titleText: "",
 			bodyText: "",
 			textColor: "#ffffff",
@@ -32,67 +36,81 @@ class SocialMediaImageCreator {
 			custom: { width: 1200, height: 630 },
 		};
 
-		// Drag state
 		this.isDragging = false;
 		this.lastMousePos = { x: 0, y: 0 };
 
+		// Performance: rAF batching
+		this._drawPending = false;
+		this._fullDrawPending = false;
+
+		// Performance: reusable offscreen canvas for DoF
+		this._offscreen = null;
+		this._offCtx = null;
+
+		// Performance: debounced save
+		this._saveTimer = null;
+
 		this.init();
 		this.loadSettings();
-	}
-
-	init() {
-		this.setupEventListeners();
 		this.updateCanvasSize();
 		this.drawCanvas();
 	}
 
-	setupEventListeners() {
-		// File upload
-		const fileInput = document.getElementById("imageUpload");
-		const uploadLabel = document.querySelector(".upload-label");
+	init() {
+		this.setupEventListeners();
+		this.setupCanvasDragEvents();
+		this.setupCanvasDropZone();
+		this.setupCollapsibleSections();
+		this.setupMobileSidebar();
+	}
 
-		fileInput.addEventListener("change", (e) => this.handleFileUpload(e));
+	// ─── Performance: batched rendering ───
 
-		// Drag and drop
-		uploadLabel.addEventListener("dragover", (e) => {
-			e.preventDefault();
-			uploadLabel.classList.add("dragover");
-		});
-
-		uploadLabel.addEventListener("dragleave", () => {
-			uploadLabel.classList.remove("dragover");
-		});
-
-		uploadLabel.addEventListener("drop", (e) => {
-			e.preventDefault();
-			uploadLabel.classList.remove("dragover");
-
-			const files = e.dataTransfer.files;
-			if (files.length > 0 && files[0].type.startsWith("image/")) {
-				this.loadImage(files[0]);
+	requestDraw(full = true) {
+		if (full) this._fullDrawPending = true;
+		if (this._drawPending) return;
+		this._drawPending = true;
+		requestAnimationFrame(() => {
+			this._drawPending = false;
+			const full = this._fullDrawPending;
+			this._fullDrawPending = false;
+			if (full) {
+				this.drawCanvas();
+			} else {
+				this.drawCanvasLight();
 			}
 		});
+	}
 
-		// Canvas size controls
+	debouncedSave() {
+		clearTimeout(this._saveTimer);
+		this._saveTimer = setTimeout(() => this.saveSettings(), 300);
+	}
+
+	// ─── Event Listeners ───
+
+	setupEventListeners() {
+		const fileInput = document.getElementById("imageUpload");
+		fileInput.addEventListener("change", (e) => this.handleFileUpload(e));
+
 		document.getElementById("canvasSize").addEventListener("change", (e) => {
 			this.currentSettings.canvasSize = e.target.value;
 			this.updateCanvasSize();
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
-		// Custom size inputs
 		document.getElementById("customWidth").addEventListener("input", () => {
 			if (this.currentSettings.canvasSize === "custom") {
 				this.updateCanvasSize();
-				this.drawCanvas();
+				this.requestDraw();
 			}
 		});
 
 		document.getElementById("customHeight").addEventListener("input", () => {
 			if (this.currentSettings.canvasSize === "custom") {
 				this.updateCanvasSize();
-				this.drawCanvas();
+				this.requestDraw();
 			}
 		});
 
@@ -100,104 +118,199 @@ class SocialMediaImageCreator {
 		document.getElementById("skewX").addEventListener("input", (e) => {
 			this.currentSettings.skewX = parseFloat(e.target.value);
 			document.getElementById("skewXValue").textContent = `${e.target.value}°`;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("skewY").addEventListener("input", (e) => {
 			this.currentSettings.skewY = parseFloat(e.target.value);
 			document.getElementById("skewYValue").textContent = `${e.target.value}°`;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("grayscale").addEventListener("input", (e) => {
 			this.currentSettings.grayscale = parseInt(e.target.value);
 			document.getElementById("grayscaleValue").textContent = `${e.target.value}%`;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("zoom").addEventListener("input", (e) => {
 			this.currentSettings.zoom = parseInt(e.target.value);
 			document.getElementById("zoomValue").textContent = `${e.target.value}%`;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("opacity").addEventListener("input", (e) => {
 			this.currentSettings.opacity = parseInt(e.target.value);
 			document.getElementById("opacityValue").textContent = `${e.target.value}%`;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("grain").addEventListener("input", (e) => {
 			this.currentSettings.grain = parseInt(e.target.value);
 			document.getElementById("grainValue").textContent = `${e.target.value}%`;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
+		});
+
+		// Depth of field controls
+		document.getElementById("dofIntensity").addEventListener("input", (e) => {
+			this.currentSettings.dofIntensity = parseFloat(e.target.value);
+			document.getElementById("dofIntensityValue").textContent = `${e.target.value}px`;
+			this.requestDraw();
+			this.debouncedSave();
+		});
+
+		document.getElementById("dofSize").addEventListener("input", (e) => {
+			this.currentSettings.dofSize = parseInt(e.target.value);
+			document.getElementById("dofSizeValue").textContent = `${e.target.value}%`;
+			this.requestDraw();
+			this.debouncedSave();
+		});
+
+		document.getElementById("dofFocusX").addEventListener("input", (e) => {
+			this.currentSettings.dofFocusX = parseInt(e.target.value);
+			document.getElementById("dofFocusXValue").textContent = `${e.target.value}%`;
+			this.requestDraw();
+			this.debouncedSave();
+		});
+
+		document.getElementById("dofFocusY").addEventListener("input", (e) => {
+			this.currentSettings.dofFocusY = parseInt(e.target.value);
+			document.getElementById("dofFocusYValue").textContent = `${e.target.value}%`;
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		// Text controls
 		document.getElementById("titleText").addEventListener("input", (e) => {
 			this.currentSettings.titleText = e.target.value;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("bodyText").addEventListener("input", (e) => {
 			this.currentSettings.bodyText = e.target.value;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("textColor").addEventListener("input", (e) => {
 			this.currentSettings.textColor = e.target.value;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("textAlign").addEventListener("change", (e) => {
 			this.currentSettings.textAlign = e.target.value;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("titleSize").addEventListener("input", (e) => {
 			this.currentSettings.titleSize = parseInt(e.target.value);
 			document.getElementById("titleSizeValue").textContent = `${e.target.value}px`;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("bodySize").addEventListener("input", (e) => {
 			this.currentSettings.bodySize = parseInt(e.target.value);
 			document.getElementById("bodySizeValue").textContent = `${e.target.value}px`;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		// Background controls
 		document.getElementById("backgroundColor").addEventListener("input", (e) => {
 			this.currentSettings.backgroundColor = e.target.value;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		document.getElementById("transparentBackground").addEventListener("change", (e) => {
 			this.currentSettings.transparentBackground = e.target.checked;
-			this.drawCanvas();
-			this.saveSettings();
+			this.requestDraw();
+			this.debouncedSave();
 		});
 
 		// Action buttons
 		document.getElementById("resetBtn").addEventListener("click", () => this.resetAll());
 		document.getElementById("resetPositionBtn").addEventListener("click", () => this.resetImagePosition());
 		document.getElementById("downloadBtn").addEventListener("click", () => this.downloadImage());
+	}
 
-		// Canvas drag events for repositioning image
-		this.setupCanvasDragEvents();
+	setupCanvasDropZone() {
+		const canvasArea = document.querySelector(".canvas-area");
+		const fileInput = document.getElementById("imageUpload");
+
+		canvasArea.addEventListener("dragover", (e) => {
+			e.preventDefault();
+			canvasArea.classList.add("dragover");
+		});
+
+		canvasArea.addEventListener("dragleave", (e) => {
+			if (!canvasArea.contains(e.relatedTarget)) {
+				canvasArea.classList.remove("dragover");
+			}
+		});
+
+		canvasArea.addEventListener("drop", (e) => {
+			e.preventDefault();
+			canvasArea.classList.remove("dragover");
+			const files = e.dataTransfer.files;
+			if (files.length > 0 && files[0].type.startsWith("image/")) {
+				this.loadImage(files[0]);
+			}
+		});
+
+		canvasArea.addEventListener("click", (e) => {
+			if (!this.uploadedImage) {
+				fileInput.click();
+			}
+		});
+	}
+
+	setupCollapsibleSections() {
+		document.querySelectorAll(".section-toggle").forEach((toggle) => {
+			toggle.addEventListener("click", () => {
+				const content = toggle.nextElementSibling;
+				const isExpanded = toggle.getAttribute("aria-expanded") === "true";
+				toggle.setAttribute("aria-expanded", !isExpanded);
+				content.classList.toggle("collapsed", isExpanded);
+			});
+		});
+	}
+
+	setupMobileSidebar() {
+		const toggleBtn = document.querySelector(".sidebar-toggle-mobile");
+		const sidebar = document.querySelector(".sidebar");
+		if (!toggleBtn) return;
+
+		const overlay = document.createElement("div");
+		overlay.className = "sidebar-overlay";
+		document.querySelector(".app-body").appendChild(overlay);
+
+		const closeSidebar = () => {
+			sidebar.classList.remove("open");
+			overlay.classList.remove("active");
+		};
+
+		toggleBtn.addEventListener("click", () => {
+			const isOpen = sidebar.classList.contains("open");
+			if (isOpen) {
+				closeSidebar();
+			} else {
+				sidebar.classList.add("open");
+				overlay.classList.add("active");
+			}
+		});
+
+		overlay.addEventListener("click", closeSidebar);
 	}
 
 	handleFileUpload(event) {
@@ -237,15 +350,32 @@ class SocialMediaImageCreator {
 			this.canvas.width = size.width;
 			this.canvas.height = size.height;
 		}
+		// Invalidate offscreen cache on size change
+		this._offscreen = null;
 	}
 
+	// ─── Offscreen canvas management ───
+
+	getOffscreen() {
+		const w = this.canvas.width;
+		const h = this.canvas.height;
+		if (!this._offscreen || this._offscreen.width !== w || this._offscreen.height !== h) {
+			this._offscreen = document.createElement("canvas");
+			this._offscreen.width = w;
+			this._offscreen.height = h;
+			this._offCtx = this._offscreen.getContext("2d");
+		}
+		return { canvas: this._offscreen, ctx: this._offCtx };
+	}
+
+	// ─── Drawing ───
+
+	// Full quality render (used for sliders, final output)
 	drawCanvas() {
 		const { width, height } = this.canvas;
 
-		// Clear canvas
 		this.ctx.clearRect(0, 0, width, height);
 
-		// Set background (transparent or colored)
 		if (!this.currentSettings.transparentBackground) {
 			this.ctx.fillStyle = this.currentSettings.backgroundColor;
 			this.ctx.fillRect(0, 0, width, height);
@@ -253,9 +383,15 @@ class SocialMediaImageCreator {
 
 		if (this.uploadedImage) {
 			this.drawImage();
+		} else {
+			this.drawEmptyState();
 		}
 
-		// Apply grain effect to entire canvas (after image, before text)
+		// Depth of field: after image+grayscale, before grain+text
+		if (this.currentSettings.dofIntensity > 0) {
+			this.applyDepthOfFieldEffect();
+		}
+
 		if (this.currentSettings.grain > 0) {
 			this.applyGrainEffect();
 		}
@@ -263,109 +399,132 @@ class SocialMediaImageCreator {
 		this.drawText();
 	}
 
+	// Lightweight render for drag interactions (skip grain)
+	drawCanvasLight() {
+		const { width, height } = this.canvas;
+
+		this.ctx.clearRect(0, 0, width, height);
+
+		if (!this.currentSettings.transparentBackground) {
+			this.ctx.fillStyle = this.currentSettings.backgroundColor;
+			this.ctx.fillRect(0, 0, width, height);
+		}
+
+		if (this.uploadedImage) {
+			this.drawImage();
+		} else {
+			this.drawEmptyState();
+		}
+
+		if (this.currentSettings.dofIntensity > 0) {
+			this.applyDepthOfFieldEffect();
+		}
+
+		// Skip grain during drag for performance
+		this.drawText();
+	}
+
+	drawEmptyState() {
+		const { width, height } = this.canvas;
+		const fontSize = Math.max(16, Math.round(width / 40));
+		this.ctx.save();
+		this.ctx.fillStyle = "#444";
+		this.ctx.font = `${fontSize}px 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace`;
+		this.ctx.textAlign = "center";
+		this.ctx.textBaseline = "middle";
+		this.ctx.fillText("Drop or tap to add an image", width / 2, height / 2);
+		this.ctx.restore();
+	}
+
 	drawImage() {
 		const { width: canvasWidth, height: canvasHeight } = this.canvas;
 		const { width: imgWidth, height: imgHeight } = this.uploadedImage;
 
-		// Calculate scaling based on zoom to cover entire canvas
 		const zoomFactor = this.currentSettings.zoom / 100;
 		const scale = Math.max(canvasWidth / imgWidth, canvasHeight / imgHeight) * zoomFactor;
 		const scaledWidth = imgWidth * scale;
 		const scaledHeight = imgHeight * scale;
 
-		// Center the image and apply position offsets
 		const x = (canvasWidth - scaledWidth) / 2 + this.currentSettings.imageX;
 		const y = (canvasHeight - scaledHeight) / 2 + this.currentSettings.imageY;
 
-		// Save context for transformations
 		this.ctx.save();
 
-		// Enable antialiasing for smoother rendering
 		this.ctx.imageSmoothingEnabled = true;
 		this.ctx.imageSmoothingQuality = "high";
 
-		// Apply skew transformation
 		const skewXRad = (this.currentSettings.skewX * Math.PI) / 180;
 		const skewYRad = (this.currentSettings.skewY * Math.PI) / 180;
 
-		// Move to center for transformation
 		this.ctx.translate(canvasWidth / 2, canvasHeight / 2);
 		this.ctx.transform(1, Math.tan(skewYRad), Math.tan(skewXRad), 1, 0, 0);
 		this.ctx.translate(-canvasWidth / 2, -canvasHeight / 2);
 
-		// Apply opacity
 		this.ctx.globalAlpha = this.currentSettings.opacity / 100;
 
-		// Draw the image
-		this.ctx.drawImage(this.uploadedImage, x, y, scaledWidth, scaledHeight);
-
-		// Apply grayscale effect if enabled (only to image area)
+		// GPU-accelerated grayscale via canvas filter
 		if (this.currentSettings.grayscale > 0) {
-			this.applyGrayscaleEffect(x, y, scaledWidth, scaledHeight);
+			this.ctx.filter = `grayscale(${this.currentSettings.grayscale}%)`;
 		}
 
-		// Restore context
+		this.ctx.drawImage(this.uploadedImage, x, y, scaledWidth, scaledHeight);
+
+		// Reset filter
+		this.ctx.filter = "none";
+
 		this.ctx.restore();
 	}
 
-	applyGrayscaleEffect(x, y, width, height) {
-		// Ensure coordinates are integers and within bounds
-		x = Math.floor(x);
-		y = Math.floor(y);
-		width = Math.floor(width);
-		height = Math.floor(height);
+	applyDepthOfFieldEffect() {
+		const blurRadius = this.currentSettings.dofIntensity;
+		if (blurRadius <= 0) return;
 
-		// Clamp to canvas bounds
-		const canvasWidth = this.canvas.width;
-		const canvasHeight = this.canvas.height;
+		const w = this.canvas.width;
+		const h = this.canvas.height;
 
-		if (x < 0) {
-			width += x;
-			x = 0;
-		}
-		if (y < 0) {
-			height += y;
-			y = 0;
-		}
-		if (x + width > canvasWidth) {
-			width = canvasWidth - x;
-		}
-		if (y + height > canvasHeight) {
-			height = canvasHeight - y;
-		}
+		const { canvas: offscreen, ctx: offCtx } = this.getOffscreen();
 
-		// Skip if dimensions are invalid
-		if (width <= 0 || height <= 0) return;
+		// Step 1: Draw blurred version of current canvas onto offscreen
+		offCtx.clearRect(0, 0, w, h);
+		offCtx.filter = `blur(${blurRadius}px)`;
+		offCtx.drawImage(this.canvas, 0, 0);
+		offCtx.filter = "none";
 
-		try {
-			// Get image data for the area where the image is drawn
-			const imageData = this.ctx.getImageData(x, y, width, height);
-			const data = imageData.data;
+		// Step 2: Mask the blurred canvas — keep only the edges (outside focal area)
+		// Use 'destination-in' with a radial gradient that's opaque at edges, transparent at center
+		offCtx.save();
+		offCtx.globalCompositeOperation = "destination-in";
 
-			const grayscaleIntensity = this.currentSettings.grayscale / 100;
+		const focusX = (this.currentSettings.dofFocusX / 100) * w;
+		const focusY = (this.currentSettings.dofFocusY / 100) * h;
+		const radiusX = (this.currentSettings.dofSize / 100) * (w / 2);
+		const radiusY = (this.currentSettings.dofSize / 100) * (h / 2);
 
-			// Apply grayscale effect pixel by pixel
-			for (let i = 0; i < data.length; i += 4) {
-				const r = data[i];
-				const g = data[i + 1];
-				const b = data[i + 2];
+		// We need: transparent center, opaque edges
+		// 'destination-in' keeps destination where source alpha > 0
+		// So we fill with opaque, then punch a transparent hole in the center
+		// Easier: use 'destination-out' with an opaque-center gradient
+		offCtx.globalCompositeOperation = "destination-out";
 
-				// Using luminance formula for better grayscale conversion
-				const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+		// Draw elliptical gradient: opaque center fading to transparent edges
+		// We use a scaled circle to create an ellipse
+		offCtx.save();
+		offCtx.translate(focusX, focusY);
+		offCtx.scale(1, radiusY / radiusX);
 
-				// Blend between original color and grayscale based on intensity
-				data[i] = r + (gray - r) * grayscaleIntensity; // Red
-				data[i + 1] = g + (gray - g) * grayscaleIntensity; // Green
-				data[i + 2] = b + (gray - b) * grayscaleIntensity; // Blue
+		const grad = offCtx.createRadialGradient(0, 0, 0, 0, 0, radiusX * 1.6);
+		grad.addColorStop(0, "rgba(0,0,0,1)");       // fully erase center (sharp shows through)
+		grad.addColorStop(0.625, "rgba(0,0,0,1)");    // ~1.0/1.6 = sharp zone
+		grad.addColorStop(1, "rgba(0,0,0,0)");         // transparent at edge = keep blur
 
-				// Alpha channel (data[i + 3]) remains unchanged
-			}
+		offCtx.fillStyle = grad;
+		offCtx.fillRect(-w, -h * (radiusX / radiusY), w * 2, h * 2 * (radiusX / radiusY));
+		offCtx.restore();
 
-			// Put the modified image data back
-			this.ctx.putImageData(imageData, x, y);
-		} catch (e) {
-			console.warn("Could not apply grayscale effect:", e);
-		}
+		offCtx.restore();
+
+		// Step 3: Draw the masked blur on top of the sharp main canvas
+		this.ctx.drawImage(offscreen, 0, 0);
 	}
 
 	applyGrainEffect() {
@@ -373,26 +532,17 @@ class SocialMediaImageCreator {
 		const canvasHeight = this.canvas.height;
 
 		try {
-			// Get image data for entire canvas
 			const imageData = this.ctx.getImageData(0, 0, canvasWidth, canvasHeight);
 			const data = imageData.data;
-
 			const grainIntensity = this.currentSettings.grain / 100;
 
-			// Apply grain effect pixel by pixel to entire canvas
 			for (let i = 0; i < data.length; i += 4) {
-				// Generate random grain value
 				const grain = (Math.random() - 0.5) * grainIntensity * 100;
-
-				// Apply grain to RGB channels
-				data[i] = Math.max(0, Math.min(255, data[i] + grain)); // Red
-				data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain)); // Green
-				data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain)); // Blue
-
-				// Alpha channel (data[i + 3]) remains unchanged
+				data[i] = Math.max(0, Math.min(255, data[i] + grain));
+				data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + grain));
+				data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + grain));
 			}
 
-			// Put the modified image data back
 			this.ctx.putImageData(imageData, 0, 0);
 		} catch (e) {
 			console.warn("Could not apply grain effect:", e);
@@ -410,37 +560,29 @@ class SocialMediaImageCreator {
 
 		let yPosition = canvasHeight - margin;
 
-		// Calculate x position based on alignment
 		const getXPosition = () => {
 			if (this.currentSettings.textAlign === "right") {
 				return canvasWidth - margin;
 			}
-			return margin; // left alignment
+			return margin;
 		};
 
-		// Draw body text first (it goes underneath the title)
 		if (this.currentSettings.bodyText.trim()) {
 			this.ctx.font = `${this.currentSettings.bodySize}px 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace`;
-
 			const bodyLines = this.wrapText(this.currentSettings.bodyText, canvasWidth - margin * 2, this.currentSettings.bodySize);
 
-			// Draw body text lines from bottom up
 			for (let i = bodyLines.length - 1; i >= 0; i--) {
 				this.ctx.fillText(bodyLines[i], getXPosition(), yPosition);
 				yPosition -= this.currentSettings.bodySize * lineHeight;
 			}
 
-			// Add space between body and title
 			yPosition -= 10;
 		}
 
-		// Draw title text
 		if (this.currentSettings.titleText.trim()) {
 			this.ctx.font = `bold ${this.currentSettings.titleSize}px 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace`;
-
 			const titleLines = this.wrapText(this.currentSettings.titleText, canvasWidth - margin * 2, this.currentSettings.titleSize);
 
-			// Draw title lines from bottom up
 			for (let i = titleLines.length - 1; i >= 0; i--) {
 				this.ctx.fillText(titleLines[i], getXPosition(), yPosition);
 				yPosition -= this.currentSettings.titleSize * lineHeight;
@@ -453,7 +595,6 @@ class SocialMediaImageCreator {
 		const lines = [];
 		let currentLine = "";
 
-		// Set font for measurement
 		this.ctx.font = `${fontSize}px 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace`;
 
 		for (let i = 0; i < words.length; i++) {
@@ -484,6 +625,10 @@ class SocialMediaImageCreator {
 			zoom: 100,
 			opacity: 100,
 			grain: 0,
+			dofIntensity: 0,
+			dofSize: 50,
+			dofFocusX: 50,
+			dofFocusY: 50,
 			titleText: "",
 			bodyText: "",
 			textColor: "#ffffff",
@@ -498,7 +643,6 @@ class SocialMediaImageCreator {
 
 		this.uploadedImage = null;
 
-		// Reset UI elements
 		document.getElementById("canvasSize").value = "opengraph";
 		document.getElementById("skewX").value = 5;
 		document.getElementById("skewY").value = 5.5;
@@ -506,6 +650,10 @@ class SocialMediaImageCreator {
 		document.getElementById("zoom").value = 100;
 		document.getElementById("opacity").value = 100;
 		document.getElementById("grain").value = 0;
+		document.getElementById("dofIntensity").value = 0;
+		document.getElementById("dofSize").value = 50;
+		document.getElementById("dofFocusX").value = 50;
+		document.getElementById("dofFocusY").value = 50;
 		document.getElementById("titleText").value = "";
 		document.getElementById("bodyText").value = "";
 		document.getElementById("textColor").value = "#ffffff";
@@ -516,13 +664,16 @@ class SocialMediaImageCreator {
 		document.getElementById("backgroundColor").value = "#2a2a2a";
 		document.getElementById("transparentBackground").checked = false;
 
-		// Reset value displays
 		document.getElementById("skewXValue").textContent = "5°";
 		document.getElementById("skewYValue").textContent = "5.5°";
 		document.getElementById("grayscaleValue").textContent = "100%";
 		document.getElementById("zoomValue").textContent = "100%";
 		document.getElementById("opacityValue").textContent = "100%";
 		document.getElementById("grainValue").textContent = "0%";
+		document.getElementById("dofIntensityValue").textContent = "0px";
+		document.getElementById("dofSizeValue").textContent = "50%";
+		document.getElementById("dofFocusXValue").textContent = "50%";
+		document.getElementById("dofFocusYValue").textContent = "50%";
 		document.getElementById("titleSizeValue").textContent = "48px";
 		document.getElementById("bodySizeValue").textContent = "24px";
 
@@ -536,23 +687,20 @@ class SocialMediaImageCreator {
 		this.currentSettings.imageX = 0;
 		this.currentSettings.imageY = 0;
 		this.drawCanvas();
-		this.saveSettings();
+		this.debouncedSave();
 	}
 
 	downloadImage() {
-		// Create a temporary link element
-		const link = document.createElement("a");
+		// Force a full-quality render before export
+		this.drawCanvas();
 
-		// Generate filename with timestamp
+		const link = document.createElement("a");
 		const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
 		const filename = `social-media-image-${timestamp}.png`;
 
-		// Set the download attributes
 		link.download = filename;
-		// Use image/png to support transparency
 		link.href = this.canvas.toDataURL("image/png");
 
-		// Trigger download
 		document.body.appendChild(link);
 		link.click();
 		document.body.removeChild(link);
@@ -583,6 +731,10 @@ class SocialMediaImageCreator {
 		document.getElementById("zoom").value = this.currentSettings.zoom;
 		document.getElementById("opacity").value = this.currentSettings.opacity;
 		document.getElementById("grain").value = this.currentSettings.grain;
+		document.getElementById("dofIntensity").value = this.currentSettings.dofIntensity;
+		document.getElementById("dofSize").value = this.currentSettings.dofSize;
+		document.getElementById("dofFocusX").value = this.currentSettings.dofFocusX;
+		document.getElementById("dofFocusY").value = this.currentSettings.dofFocusY;
 		document.getElementById("titleText").value = this.currentSettings.titleText;
 		document.getElementById("bodyText").value = this.currentSettings.bodyText;
 		document.getElementById("textColor").value = this.currentSettings.textColor;
@@ -592,25 +744,26 @@ class SocialMediaImageCreator {
 		document.getElementById("backgroundColor").value = this.currentSettings.backgroundColor;
 		document.getElementById("transparentBackground").checked = this.currentSettings.transparentBackground;
 
-		// Update value displays
 		document.getElementById("skewXValue").textContent = `${this.currentSettings.skewX}°`;
 		document.getElementById("skewYValue").textContent = `${this.currentSettings.skewY}°`;
 		document.getElementById("grayscaleValue").textContent = `${this.currentSettings.grayscale}%`;
 		document.getElementById("zoomValue").textContent = `${this.currentSettings.zoom}%`;
 		document.getElementById("opacityValue").textContent = `${this.currentSettings.opacity}%`;
 		document.getElementById("grainValue").textContent = `${this.currentSettings.grain}%`;
+		document.getElementById("dofIntensityValue").textContent = `${this.currentSettings.dofIntensity}px`;
+		document.getElementById("dofSizeValue").textContent = `${this.currentSettings.dofSize}%`;
+		document.getElementById("dofFocusXValue").textContent = `${this.currentSettings.dofFocusX}%`;
+		document.getElementById("dofFocusYValue").textContent = `${this.currentSettings.dofFocusY}%`;
 		document.getElementById("titleSizeValue").textContent = `${this.currentSettings.titleSize}px`;
 		document.getElementById("bodySizeValue").textContent = `${this.currentSettings.bodySize}px`;
 	}
 
 	setupCanvasDragEvents() {
-		// Mouse events
 		this.canvas.addEventListener("mousedown", (e) => this.startDrag(e));
 		this.canvas.addEventListener("mousemove", (e) => this.drag(e));
 		this.canvas.addEventListener("mouseup", () => this.endDrag());
 		this.canvas.addEventListener("mouseleave", () => this.endDrag());
 
-		// Touch events for mobile
 		this.canvas.addEventListener("touchstart", (e) => {
 			e.preventDefault();
 			const touch = e.touches[0];
@@ -636,7 +789,6 @@ class SocialMediaImageCreator {
 			this.endDrag();
 		});
 
-		// Set canvas cursor style
 		this.updateCanvasCursor();
 	}
 
@@ -644,7 +796,7 @@ class SocialMediaImageCreator {
 		if (this.uploadedImage) {
 			this.canvas.style.cursor = "grab";
 		} else {
-			this.canvas.style.cursor = "default";
+			this.canvas.style.cursor = "pointer";
 		}
 	}
 
@@ -670,31 +822,32 @@ class SocialMediaImageCreator {
 			y: e.clientY - rect.top,
 		};
 
-		// Calculate the delta movement
 		const deltaX = currentMousePos.x - this.lastMousePos.x;
 		const deltaY = currentMousePos.y - this.lastMousePos.y;
 
-		// Update image position
 		this.currentSettings.imageX += deltaX;
 		this.currentSettings.imageY += deltaY;
 
-		// Update last mouse position
 		this.lastMousePos = currentMousePos;
 
-		// Redraw canvas
-		this.drawCanvas();
-		this.saveSettings();
+		// Lightweight render during drag (skip grain)
+		this.requestDraw(false);
+		this.debouncedSave();
 	}
 
 	endDrag() {
-		this.isDragging = false;
-		this.canvas.style.cursor = "grab";
+		if (this.isDragging) {
+			this.isDragging = false;
+			if (this.uploadedImage) {
+				this.canvas.style.cursor = "grab";
+			}
+			// Full quality render on release
+			this.drawCanvas();
+			this.debouncedSave();
+		}
 	}
-
-	// ...existing code...
 }
 
-// Initialize the app when the DOM is loaded
 document.addEventListener("DOMContentLoaded", () => {
 	new SocialMediaImageCreator();
 });
